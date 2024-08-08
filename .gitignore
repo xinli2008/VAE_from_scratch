@@ -1,0 +1,4 @@
+data/
+*.pth
+models/
+pretrained_models/
