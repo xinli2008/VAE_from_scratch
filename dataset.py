@@ -25,9 +25,12 @@ class my_dataset(Dataset):
         image = Image.open(path).convert("RGB")
         return self.pipeline(image)
     
-def get_dataloader(root, **kwargs):
+def get_dataloader(root, batch_size, num_workers, **kwargs):
+    if not os.path.exists(root):
+        raise FileNotFoundError(f"the provided root path {root} does not exists")
+    
     dataset = my_dataset(root = root, **kwargs)
-    dataloader = DataLoader(dataset, batch_size = 16, shuffle = True, num_workers = 4, drop_last = True)
+    dataloader = DataLoader(dataset, batch_size = batch_size, shuffle = True, num_workers = num_workers, drop_last = True)
     return dataloader
 
 if __name__ == "__main__":
