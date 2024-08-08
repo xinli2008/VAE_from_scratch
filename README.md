@@ -10,6 +10,10 @@ Pytorch版本实现的Variational Autoencoder(仅供学习)
 
 ![vae](./assets/VAE-introduction-2.png)
 
+- **公式推导**
+
+    见 [VAE理论知识推导](/notebook/VAE.pdf)
+
 ## Acknowledgements
 
 - [变分自编码器VAE详解](https://mp.weixin.qq.com/s/PN5LnQHrk7hZz79P0fT26Q)
