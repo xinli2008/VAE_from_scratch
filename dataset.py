@@ -5,7 +5,14 @@ from PIL import Image
 from torchvision import transforms
 from torch.utils.data import DataLoader, Dataset
 
-class my_dataset(Dataset):
+class MyDataset(Dataset):
+    """
+    Custom dataset for loading images
+
+    Args:
+        root(str): root directory containing image files.
+        image_shape(tuple): desired shape of the output images.
+    """
     def __init__(self, root, image_shape = (64, 64)) ->None:
         super().__init__()
         self.root = root
@@ -22,14 +29,26 @@ class my_dataset(Dataset):
 
     def __getitem__(self, index: int):
         path = os.path.join(self.root, self.filenames[index])
-        image = Image.open(path).convert("RGB")
-        return self.pipeline(image)
+        try:
+            image = Image.open(path).convert("RGB")
+            return self.pipeline(image)
+        except Exception as e:
+            raise IOError(f"Error loading image {path}: {e}")
+        
     
 def get_dataloader(root, batch_size, num_workers, **kwargs):
+    """
+    Create a dataloader for the custom dataset.
+
+    Args:
+        root(str): root directionary containing image files.
+        batch_size(int): number of images per batch.
+        num_workers(int): number of subprocess to use for data loading.
+    """
     if not os.path.exists(root):
         raise FileNotFoundError(f"the provided root path {root} does not exists")
     
-    dataset = my_dataset(root = root, **kwargs)
+    dataset = MyDataset(root = root, **kwargs)
     dataloader = DataLoader(dataset, batch_size = batch_size, shuffle = True, num_workers = num_workers, drop_last = True)
     return dataloader
 

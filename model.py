@@ -2,14 +2,33 @@ import torch
 import torch.nn as nn
 
 class VAE(nn.Module):
-    def __init__(self, hiddens = [16, 32, 64, 128, 256], latent_dim = 128) -> None:
+    def __init__(self, hiddens = None, latent_dim = 128) -> None:
+        """
+        Variational Autoencoder model.
+
+        Args:
+            hiddens(list): List of hidden layer dimensions for the encoder and decoder.
+            latent_dim(int): Dimensionality of the latent space.
+        """
         super().__init__()
 
-        # encoder
-        prev_channels = 3
-        encoder_modules = []
-        image_length = 64
+        if hiddens is None:
+            hiddens = [16, 32, 64, 128, 256]
+
         self.latent_dim = latent_dim
+        self.encoder, prev_channels, image_length = self._build_encoder(hiddens)
+        self.mean_linear = nn.Linear(prev_channels * image_length * image_length, latent_dim)
+        self.vae_linear  = nn.Linear(prev_channels * image_length * image_length, latent_dim)
+        
+        self.decoder_projection = nn.Linear(latent_dim, prev_channels * image_length * image_length)
+        self.decoder_input_shape = (prev_channels, image_length, image_length)
+        self.decoder = self._build_decoder(hiddens)
+
+    
+    def _build_encoder(self, hiddens):
+        encoder_modules = []
+        prev_channels = 3
+        image_length = 64
 
         for cur_channel in hiddens:
             encoder_modules.append(
@@ -20,16 +39,12 @@ class VAE(nn.Module):
                 )
             )
             prev_channels = cur_channel
+            # NOTE:
             image_length = image_length // 2
-        
-        self.encoder = nn.Sequential(*encoder_modules)
-        self.mean_linear = nn.Linear(prev_channels * image_length * image_length, latent_dim)
-        self.vae_linear  = nn.Linear(prev_channels * image_length * image_length, latent_dim)
-        
-        self.decoder_projection = nn.Linear(latent_dim, prev_channels * image_length * image_length)
-        self.decoder_input = (prev_channels, image_length, image_length)
 
-        # decoder
+        return nn.Sequential(*encoder_modules), prev_channels, image_length
+
+    def _build_decoder(self, hiddens):
         decoder_modules = []
         for i in range(len(hiddens)-1, 0, -1):
             decoder_modules.append(
@@ -50,8 +65,8 @@ class VAE(nn.Module):
             )
         )
     
-        self.decoder = nn.Sequential(*decoder_modules)
-    
+        return nn.Sequential(*decoder_modules)
+
     def forward(self, x):
         # forward encoderd
         encoded = self.encoder(x)
@@ -59,14 +74,14 @@ class VAE(nn.Module):
 
         # latent z
         mean = self.mean_linear(encoded)
-        var  = self.vae_linear(encoded)
-        eps = torch.rand_like(var)
+        var  = self.log_var_linear(encoded)
+        eps = torch.randn_like(var)
         std = torch.exp(var / 2)
         z   = eps * std + mean
         
         # decoder
         x = self.decoder_projection(z)
-        x = torch.reshape(x, (-1, *(self.decoder_input)))
+        x = torch.reshape(x, (-1, *(self.decoder_input_shape)))
         decoded = self.decoder(x)
 
         return decoded, mean, var
