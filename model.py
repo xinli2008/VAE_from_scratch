@@ -73,6 +73,10 @@ class VAE(nn.Module):
         encoded = torch.flatten(encoded, 1)
 
         # latent z
+        # NOTE: 重参数化技巧
+        # 具体指的是在VAE中, 我们希望从潜在空间中采样一个点z, 但直接采样会导致梯度无法传递。
+        # 为了解决这个问题, 我们引入了重参数化技巧, 将采样过程表示为一个可微分的操作。
+        # 具体来说, 我们将z表示为: z = μ + σ * ε 其中, μ是均值, σ是标准差, ε是从标准正态分布中采样的噪声。
         mean = self.mean_linear(encoded)
         var  = self.log_var_linear(encoded)
         eps = torch.randn_like(var)

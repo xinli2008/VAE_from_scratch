@@ -25,6 +25,14 @@ def parse_args():
     return args
 
 def loss_fn(y, output, mean, var):
+    r"""
+    VAE的loss主要由两部分组成:
+        1. 重构误差(reconstruction loss): 衡量输入数据与重构数据之间的差异, 通常使用均方误差(MSE)来计算。
+        2. KL散度(KL divergence): 衡量潜在变量的分布与标准正态分布之间的差异。
+    总的损失函数可以表示为:
+        Loss = Reconstruction Loss + kl_weight * KL Divergence
+    这种设计使VAE既能重构原始数据, 又能学到有意义的潜在表示。
+    """
     reconstruction_loss = F.mse_loss(y, output)
     kl_loss = torch.mean(-0.5 * torch.sum(1 + var - mean**2 - torch.exp(var), 1), 0)
     loss = reconstruction_loss + kl_loss * args.kl_weight
